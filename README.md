@@ -20,7 +20,7 @@ A [MagicMirror²](https://magicmirror.builders/) module that displays photos fro
 
 ```bash
 cd ~/MagicMirror/modules
-git clone <REPO-URL> MMM-NextcloudPhotos
+git clone https://github.com/bohemtucsok/MMM-NextcloudPhotos.git
 cd MMM-NextcloudPhotos
 npm install
 ```

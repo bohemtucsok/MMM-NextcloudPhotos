@@ -10,7 +10,7 @@ MagicMirror² modul, amely Nextcloud szerverről tölt le képeket és háttérk
 
 ```bash
 cd ~/MagicMirror/modules
-git clone <REPO-URL> MMM-NextcloudPhotos
+git clone https://github.com/bohemtucsok/MMM-NextcloudPhotos.git
 cd MMM-NextcloudPhotos
 npm install
 ```
