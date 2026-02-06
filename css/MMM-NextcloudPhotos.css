@@ -1,0 +1,61 @@
+/* MMM-NextcloudPhotos - Fullscreen background photo display */
+
+/* Make MagicMirror body transparent so our background image is visible */
+body {
+  background: transparent !important;
+}
+
+.mmm-ncp-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  overflow: hidden;
+  background-color: #000;
+}
+
+/* Two image layers for smooth crossfade */
+.mmm-ncp-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  opacity: 0;
+  transition: opacity 2s ease-in-out;
+}
+
+.mmm-ncp-layer.mmm-ncp-visible {
+  opacity: 1;
+}
+
+/* Loading state */
+.mmm-ncp-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 1.2rem;
+  font-family: "Roboto Condensed", Arial, Helvetica, sans-serif;
+}
+
+/* Error state */
+.mmm-ncp-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: rgba(255, 100, 100, 0.6);
+  font-size: 1rem;
+  font-family: "Roboto Condensed", Arial, Helvetica, sans-serif;
+  padding: 20px;
+  text-align: center;
+}
