@@ -1,12 +1,22 @@
 # MMM-NextcloudPhotos
 
-MagicMirror² modul, amely Nextcloud szerverről tölt le képeket és háttérképként jeleníti meg őket, crossfade átmenettel.
+A [MagicMirror²](https://magicmirror.builders/) module that displays photos from your Nextcloud server as a fullscreen background with smooth crossfade transitions.
 
----
+**[Magyar nyelvű leírás / Hungarian documentation](README_HU.md)**
 
-## Telepítés
+## Features
 
-### 1. Modul letöltése
+- Fullscreen background photo slideshow from Nextcloud
+- Smooth crossfade transitions between images
+- OAuth2 authentication (Nextcloud built-in)
+- Automatic token refresh (no manual re-authentication needed)
+- Image resizing with [sharp](https://sharp.pixelplumbing.com/) for low-memory devices (Raspberry Pi 3)
+- Configurable rotation interval, sync frequency, and display options
+- Interactive setup script for easy configuration
+
+## Installation
+
+### 1. Clone the module
 
 ```bash
 cd ~/MagicMirror/modules
@@ -15,205 +25,152 @@ cd MMM-NextcloudPhotos
 npm install
 ```
 
-### 2. Nextcloud OAuth2 kliens létrehozása
+### 2. Create an OAuth2 client in Nextcloud
 
-1. Nyisd meg a Nextcloud adminisztrációs felületet a böngészőben
-2. Menj ide: **Adminisztrációs beállítások → Biztonság → OAuth 2.0 kliensek**
-3. Adj hozzá egy új klienst:
-   - **Név:** `MagicMirror`
-   - **Átirányítási URL:** `http://<RASPBERRY-PI-IP-CÍME>:9876/callback`
-     Ez a Raspberry Pi IP címe a helyi hálózaton (pl. `http://192.168.1.100:9876/callback`).
-     A Pi IP-jét megtalálod a Pi-n az `ip addr` vagy `hostname -I` paranccsal.
-4. Jegyezd fel a **Client ID** és **Client Secret** értékeket
+1. Open your Nextcloud admin panel
+2. Go to **Administration Settings → Security → OAuth 2.0 clients**
+3. Add a new client:
+   - **Name:** `MagicMirror`
+   - **Redirect URI:** `http://<YOUR-PI-IP>:9876/callback`
+4. Note the **Client ID** and **Client Secret**
 
-### 3. Első bejelentkezés (token létrehozás)
+### 3. Authenticate (one-time setup)
 
-Ez a lépés összeköti a MagicMirror-t a Nextcloud fiókoddal. **Egyszer kell megcsinálni**, utána a modul magától frissíti a tokent.
-
-**Legegyszerűbb mód:** futtasd az interaktív setup scriptet a Pi-n:
+The easiest way — run the interactive setup script on your Pi:
 
 ```bash
 cd ~/MagicMirror/modules/MMM-NextcloudPhotos
 bash setup.sh
 ```
 
-A script végigvezet minden lépésen, automatikusan felismeri a Pi IP-jét, és elmagyarázza mit kell beírni.
+The script will guide you through each step, auto-detect your Pi's IP address, and optionally add the module to your MagicMirror `config.js`.
 
-Vagy ha manuálisan szeretnéd megadni a paramétereket:
-
-#### A) Ha a Pi elérhető a helyi hálózatról (legegyszerűbb)
-
-Ehhez a **Raspberry Pi**-nek és a **böngészőt futtató gépednek** (laptop/PC) **ugyanazon a hálózaton** kell lennie.
-
-**A Pi-n futtasd** (SSH-n keresztül):
-
-```bash
-cd ~/MagicMirror/modules/MMM-NextcloudPhotos
-node setup_oauth.js \
-  --nextcloudUrl https://NEXTCLOUD-CÍMED \
-  --clientId IDE-ÍROD-A-CLIENT-ID-T \
-  --clientSecret IDE-ÍROD-A-CLIENT-SECRET-ET \
-  --username NEXTCLOUD-FELHASZNÁLÓNEVED \
-  --host RASPBERRY-PI-IP-CÍME
-```
-
-**A paraméterek magyarázata:**
-
-| Paraméter | Mit írj ide | Példa |
-|-----------|-------------|-------|
-| `--nextcloudUrl` | A Nextcloud szervered webcíme | `https://cloud.pelda.hu` |
-| `--clientId` | A 2. lépésben kapott Client ID | `aBcDeFgH12345...` |
-| `--clientSecret` | A 2. lépésben kapott Client Secret | `xYzWvU98765...` |
-| `--username` | A Nextcloud felhasználóneved (lásd lent) | `janos` |
-| `--host` | A **Raspberry Pi** IP címe a hálózaton | `192.168.1.100` |
-
-**Példa valós adatokkal:**
+Alternatively, run the setup manually:
 
 ```bash
 node setup_oauth.js \
-  --nextcloudUrl https://cloud.pelda.hu \
-  --clientId aBcDeFgH12345... \
-  --clientSecret xYzWvU98765... \
-  --username janos \
-  --host 192.168.1.100
+  --nextcloudUrl https://cloud.example.com \
+  --clientId YOUR_CLIENT_ID \
+  --clientSecret YOUR_CLIENT_SECRET \
+  --username YOUR_NEXTCLOUD_USERNAME \
+  --host YOUR_PI_IP
 ```
 
-A script kiír egy URL-t a terminálba. **Nyisd meg ezt az URL-t a böngésződben** (a saját laptop/PC gépeden, nem a Pi-n), jelentkezz be a Nextcloud-ba, és engedélyezd a hozzáférést.
+Open the printed URL in your browser, log in to Nextcloud, and authorize the app. Tokens are saved to `tokens.json` and refreshed automatically.
 
-Ha sikerült, ezt látod: **"Sikeres bejelentkezés!"** - az ablak bezárható.
+### 4. Configure MagicMirror
 
-#### B) Ha a Pi nem elérhető (távoli hálózaton van)
-
-**1. opció: Futtasd a saját gépeden, majd másold a tokent**
-
-A saját gépeden (ahol böngésző van) is futtathatod a setup-ot:
-
-```bash
-# Saját gépen:
-node setup_oauth.js \
-  --nextcloudUrl https://cloud.pelda.hu \
-  --clientId IDE-A-CLIENT-ID \
-  --clientSecret IDE-A-CLIENT-SECRET \
-  --username FELHASZNÁLÓNÉV \
-  --host localhost
-```
-
-> **Fontos:** Ehhez a Nextcloud OAuth2 kliensben az átirányítási URL-t átmenetileg
-> `http://localhost:9876/callback`-re kell állítani! Utána visszaállíthatod a Pi IP-jére.
-
-Bejelentkezés után másold át a `tokens.json` fájlt a Pi-re:
-
-```bash
-scp tokens.json FELHASZNÁLÓ@PI-IP-CÍME:~/MagicMirror/modules/MMM-NextcloudPhotos/
-```
-
-**2. opció: SSH tunnel**
-
-```bash
-# Saját gépről nyiss egy SSH tunnel-t:
-ssh -L 9876:localhost:9876 FELHASZNÁLÓ@PI-IP-CÍME
-
-# Az SSH session-ben (a Pi-n) futtasd:
-cd ~/MagicMirror/modules/MMM-NextcloudPhotos
-node setup_oauth.js \
-  --nextcloudUrl https://cloud.pelda.hu \
-  --clientId IDE-A-CLIENT-ID \
-  --clientSecret IDE-A-CLIENT-SECRET \
-  --username FELHASZNÁLÓNÉV \
-  --host localhost
-```
-
-Nyisd meg a kiírt URL-t a saját gépeden (a tunnel átirányítja a Pi-re).
-
-### 4. MagicMirror konfiguráció
-
-Szerkeszd a `~/MagicMirror/config/config.js` fájlt és add hozzá a modult:
+Add to your `~/MagicMirror/config/config.js`:
 
 ```javascript
 {
   module: "MMM-NextcloudPhotos",
   position: "fullscreen_below",
   config: {
-    nextcloudUrl: "https://cloud.pelda.hu",
-    username: "felhasznalonev",
-    folder: "mirror",                    // Nextcloud mappa neve
-    updateInterval: 60 * 1000,           // Képváltás: 60 másodperc
-    syncInterval: 10 * 60 * 1000,        // Szinkronizálás: 10 perc
-    transitionDuration: 2000,            // Átmenet: 2 másodperc
-    backgroundSize: "cover",             // cover = kitölti a képernyőt
-    order: "random",                     // random vagy sequential
-    opacity: 1.0,                        // Átlátszóság (0.0 - 1.0)
+    nextcloudUrl: "https://cloud.example.com",
+    username: "your_username",
+    folder: "mirror",
   }
 }
 ```
 
-### 5. Képek feltöltése
+### 5. Upload photos
 
-Hozz létre egy `mirror` nevű mappát a Nextcloud-ban (vagy amit a `folder` beállításnál megadtál), és tölts fel képeket.
+Create a folder named `mirror` (or whatever you set in `folder`) in your Nextcloud and upload images.
 
-Támogatott formátumok: **JPG, JPEG, PNG, WebP, GIF, BMP, TIFF**
+Supported formats: **JPG, JPEG, PNG, WebP, GIF, BMP, TIFF**
 
-### 6. MagicMirror újraindítása
+### 6. Restart MagicMirror
 
 ```bash
 pm2 restart magicmirror
 ```
 
-A képek automatikusan letöltődnek és megjelennek háttérként.
+## Configuration Options
 
----
+| Option | Default | Description |
+|--------|---------|-------------|
+| `nextcloudUrl` | `""` | Nextcloud server URL |
+| `username` | `""` | Nextcloud username |
+| `folder` | `"mirror"` | Folder name in Nextcloud |
+| `tokenFile` | `"tokens.json"` | Token file name |
+| `updateInterval` | `30000` (30s) | Image rotation interval (ms) |
+| `syncInterval` | `600000` (10min) | Nextcloud sync interval (ms) |
+| `transitionDuration` | `2000` (2s) | Crossfade duration (ms) |
+| `backgroundSize` | `"cover"` | `cover` = fill screen, `contain` = fit entire image |
+| `order` | `"random"` | `random` or `sequential` |
+| `opacity` | `1.0` | Background opacity (0.0 - 1.0) |
+| `maxWidth` | `1920` | Max image width for resize (px) |
+| `maxHeight` | `1080` | Max image height for resize (px) |
+| `imageQuality` | `80` | JPEG quality after resize (1-100) |
 
-## Konfigurációs opciók
+## Remote Setup
 
-| Beállítás | Alapértelmezett | Leírás |
-|-----------|----------------|--------|
-| `nextcloudUrl` | `""` | Nextcloud szerver URL |
-| `username` | `""` | Nextcloud felhasználónév |
-| `folder` | `"mirror"` | Mappa neve a Nextcloud-ban |
-| `tokenFile` | `"tokens.json"` | Token fájl neve |
-| `updateInterval` | `30000` (30 mp) | Képváltás gyakorisága (ms) |
-| `syncInterval` | `600000` (10 perc) | Nextcloud szinkronizálás gyakorisága (ms) |
-| `transitionDuration` | `2000` (2 mp) | Átmenet időtartama (ms) |
-| `backgroundSize` | `"cover"` | `cover` = kitölti a képernyőt, `contain` = teljes kép látszik |
-| `order` | `"random"` | `random` = véletlenszerű, `sequential` = sorrendben |
-| `opacity` | `1.0` | Háttérkép átlátszóság (0.0 - 1.0) |
+If your Pi is not on the same network as your browser:
 
----
+**Option A: Run setup locally, then copy the token**
 
-## Hibaelhárítás
-
-### "Tokenek nem találhatók" hiba
-Futtasd újra a setup_oauth.js scriptet (lásd 3. lépés).
-
-### "Token frissítés sikertelen" hiba
-A refresh token lejárt. Futtasd újra a setup_oauth.js scriptet.
-
-### Képek nem jelennek meg
-1. Ellenőrizd, hogy van-e kép a Nextcloud `mirror` mappájában
-2. Ellenőrizd a logot: `pm2 logs magicmirror`
-3. Ellenőrizd a jogosultságokat:
-   ```bash
-   sudo chown -R $(whoami):$(whoami) ~/MagicMirror/modules/MMM-NextcloudPhotos/
-   ```
-
-### Git pull után nem működik
-A git pull visszaállíthatja a fájljogosultságokat:
 ```bash
-sudo chown -R $(whoami):$(whoami) ~/MagicMirror/modules/MMM-NextcloudPhotos/
-mkdir -p ~/MagicMirror/modules/MMM-NextcloudPhotos/cache
-pm2 restart magicmirror
+# On your local machine:
+node setup_oauth.js \
+  --nextcloudUrl https://cloud.example.com \
+  --clientId YOUR_CLIENT_ID \
+  --clientSecret YOUR_CLIENT_SECRET \
+  --username YOUR_USERNAME \
+  --host localhost
+
+# Then copy tokens.json to the Pi:
+scp tokens.json user@pi-ip:~/MagicMirror/modules/MMM-NextcloudPhotos/
 ```
 
----
+> **Note:** Temporarily change the OAuth2 redirect URI to `http://localhost:9876/callback` in Nextcloud admin.
 
-## Nextcloud felhasználónév megkeresése
+**Option B: SSH tunnel**
 
-Ha OIDC provider-en (pl. Authentik, Keycloak) keresztül jelentkezel be a Nextcloud-ba, a felhasználóneved eltérhet a szokásostól (pl. `oidc-abc123...`).
+```bash
+# From your local machine:
+ssh -L 9876:localhost:9876 user@pi-ip
 
-Megkeresése:
-1. Jelentkezz be a Nextcloud-ba a böngészőben
-2. Menj a **Beállítások** oldalra
-3. A bal oldali menüben kattints a nevedre
-4. A felhasználóneved az URL-ben látható: `https://cloud.pelda.hu/settings/user/FELHASZNÁLÓNÉV`
+# In the SSH session (on the Pi):
+cd ~/MagicMirror/modules/MMM-NextcloudPhotos
+node setup_oauth.js \
+  --nextcloudUrl https://cloud.example.com \
+  --clientId YOUR_CLIENT_ID \
+  --clientSecret YOUR_CLIENT_SECRET \
+  --username YOUR_USERNAME \
+  --host localhost
+```
 
-Vagy a Nextcloud admin felületen: **Felhasználók** menüpont → a felhasználó neve az első oszlopban.
+Then open the printed URL in your local browser.
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| "Tokens not found" error | Run `bash setup.sh` or `node setup_oauth.js` again |
+| "Token refresh failed" | Re-run the setup script to get a new token |
+| Images not showing | Check that photos exist in the Nextcloud folder, check logs with `pm2 logs magicmirror` |
+| After `git pull` not working | Run `sudo chown -R $(whoami):$(whoami) ~/MagicMirror/modules/MMM-NextcloudPhotos/` |
+
+## Performance Notes
+
+On low-memory devices (Raspberry Pi 3 with ~900MB RAM), the module automatically:
+- Resizes downloaded images to 1920x1080 using `sharp`
+- Compresses to progressive JPEG (quality 80)
+- Limits `sharp` concurrency to 1 thread
+- Cleans up preloaded images from memory after display
+
+A 12MB photo is typically reduced to ~200-300KB, preventing out-of-memory freezes.
+
+## Finding Your Nextcloud Username
+
+If you log in via an OIDC provider (e.g., Authentik, Keycloak), your username may differ from your display name (e.g., `oidc-abc123...`).
+
+To find it:
+1. Log in to Nextcloud in your browser
+2. Go to **Settings**
+3. Your username is visible in the URL: `https://cloud.example.com/settings/user/YOUR_USERNAME`
+
+## License
+
+MIT
