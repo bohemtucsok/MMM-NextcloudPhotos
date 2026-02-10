@@ -1,18 +1,53 @@
+<p align="center">
+  <img src="https://img.shields.io/badge/MagicMirror%C2%B2-module-blueviolet" alt="MagicMirror² Module" />
+  <img src="https://img.shields.io/badge/platform-Raspberry%20Pi-red" alt="Raspberry Pi" />
+  <img src="https://img.shields.io/badge/nextcloud-WebDAV%20%2B%20OAuth2-blue" alt="Nextcloud" />
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License" />
+</p>
+
 # MMM-NextcloudPhotos
 
-A [MagicMirror²](https://magicmirror.builders/) module that displays photos from your Nextcloud server as a fullscreen background with smooth crossfade transitions.
+<p align="center">
+  <strong>Display your Nextcloud photos as a fullscreen MagicMirror² background with smooth crossfade transitions.</strong>
+</p>
 
-**[Magyar nyelvű leírás / Hungarian documentation](README_HU.md)**
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#configuration">Configuration</a> •
+  <a href="#remote-setup">Remote Setup</a> •
+  <a href="#troubleshooting">Troubleshooting</a> •
+  <a href="#license">License</a>
+</p>
+
+<p align="center">
+  <strong><a href="README_HU.md">Magyar nyelvű leírás / Hungarian documentation</a></strong>
+</p>
+
+---
+
+## Why this module?
+
+You have a Raspberry Pi running [MagicMirror²](https://magicmirror.builders/) on your wall. You want it to show family photos from your Nextcloud — without USB sticks, manual syncing, or cloud services you don't control.
+
+**MMM-NextcloudPhotos** connects directly to your Nextcloud via OAuth2 + WebDAV, downloads photos, resizes them on the fly (so your Pi doesn't choke on 12MB images), and displays them as a fullscreen background with smooth crossfade transitions.
+
+Upload a photo to Nextcloud from your phone → it appears on your mirror. That's it.
+
+---
 
 ## Features
 
-- Fullscreen background photo slideshow from Nextcloud
-- Smooth crossfade transitions between images
-- OAuth2 authentication (Nextcloud built-in)
-- Automatic token refresh (no manual re-authentication needed)
-- Image resizing with [sharp](https://sharp.pixelplumbing.com/) for low-memory devices (Raspberry Pi 3)
-- Configurable rotation interval, sync frequency, and display options
-- Interactive setup script for easy configuration
+- **Fullscreen background slideshow** with smooth crossfade transitions
+- **Nextcloud OAuth2** authentication (built-in, no third-party tokens)
+- **Automatic token refresh** — authenticate once, runs forever
+- **Smart image resizing** with [sharp](https://sharp.pixelplumbing.com/) — a 12MB photo becomes ~250KB
+- **Raspberry Pi 3 optimized** — single-thread processing, memory-safe
+- **Configurable** rotation interval, sync frequency, display mode, opacity
+- **Interactive setup script** — guided configuration on your Pi
+- **Auto config.js editing** — setup script can add the module config for you
+
+---
 
 ## Installation
 
@@ -34,7 +69,7 @@ npm install
    - **Redirect URI:** `http://<YOUR-PI-IP>:9876/callback`
 4. Note the **Client ID** and **Client Secret**
 
-### 3. Authenticate (one-time setup)
+### 3. Authenticate (one-time)
 
 The easiest way — run the interactive setup script on your Pi:
 
@@ -43,9 +78,14 @@ cd ~/MagicMirror/modules/MMM-NextcloudPhotos
 bash setup.sh
 ```
 
-The script will guide you through each step, auto-detect your Pi's IP address, and optionally add the module to your MagicMirror `config.js`.
+The script will:
+- Guide you through each step
+- Auto-detect your Pi's IP address
+- Save tokens to `tokens.json`
+- Optionally add the module to your `config.js`
 
-Alternatively, run the setup manually:
+<details>
+<summary><strong>Manual setup (alternative)</strong></summary>
 
 ```bash
 node setup_oauth.js \
@@ -56,11 +96,13 @@ node setup_oauth.js \
   --host YOUR_PI_IP
 ```
 
-Open the printed URL in your browser, log in to Nextcloud, and authorize the app. Tokens are saved to `tokens.json` and refreshed automatically.
+Open the printed URL in your browser, log in to Nextcloud, and authorize the app.
+
+</details>
 
 ### 4. Configure MagicMirror
 
-Add to your `~/MagicMirror/config/config.js`:
+If the setup script didn't add it automatically, add to your `~/MagicMirror/config/config.js`:
 
 ```javascript
 {
@@ -86,14 +128,16 @@ Supported formats: **JPG, JPEG, PNG, WebP, GIF, BMP, TIFF**
 pm2 restart magicmirror
 ```
 
-## Configuration Options
+---
+
+## Configuration
 
 | Option | Default | Description |
 |--------|---------|-------------|
 | `nextcloudUrl` | `""` | Nextcloud server URL |
 | `username` | `""` | Nextcloud username |
 | `folder` | `"mirror"` | Folder name in Nextcloud |
-| `tokenFile` | `"tokens.json"` | Token file name |
+| `tokenFile` | `"tokens.json"` | Token file path |
 | `updateInterval` | `30000` (30s) | Image rotation interval (ms) |
 | `syncInterval` | `600000` (10min) | Nextcloud sync interval (ms) |
 | `transitionDuration` | `2000` (2s) | Crossfade duration (ms) |
@@ -104,11 +148,14 @@ pm2 restart magicmirror
 | `maxHeight` | `1080` | Max image height for resize (px) |
 | `imageQuality` | `80` | JPEG quality after resize (1-100) |
 
+---
+
 ## Remote Setup
 
 If your Pi is not on the same network as your browser:
 
-**Option A: Run setup locally, then copy the token**
+<details>
+<summary><strong>Option A: Run setup locally, then copy the token</strong></summary>
 
 ```bash
 # On your local machine:
@@ -125,7 +172,10 @@ scp tokens.json user@pi-ip:~/MagicMirror/modules/MMM-NextcloudPhotos/
 
 > **Note:** Temporarily change the OAuth2 redirect URI to `http://localhost:9876/callback` in Nextcloud admin.
 
-**Option B: SSH tunnel**
+</details>
+
+<details>
+<summary><strong>Option B: SSH tunnel</strong></summary>
 
 ```bash
 # From your local machine:
@@ -143,26 +193,36 @@ node setup_oauth.js \
 
 Then open the printed URL in your local browser.
 
+</details>
+
+---
+
+## Performance
+
+On low-memory devices (Raspberry Pi 3 with ~900MB RAM), the module automatically:
+
+| Optimization | Detail |
+|-------------|--------|
+| **Image resize** | Downloads are resized to 1920x1080 via `sharp` |
+| **JPEG compression** | Progressive JPEG at quality 80 |
+| **Single-thread** | `sharp.concurrency(1)` to prevent memory spikes |
+| **Memory cleanup** | Preloaded images are released after display |
+
+A 12MB photo is typically reduced to ~200-300KB, preventing out-of-memory freezes.
+
+---
+
 ## Troubleshooting
 
 | Problem | Solution |
 |---------|----------|
 | "Tokens not found" error | Run `bash setup.sh` or `node setup_oauth.js` again |
 | "Token refresh failed" | Re-run the setup script to get a new token |
-| Images not showing | Check that photos exist in the Nextcloud folder, check logs with `pm2 logs magicmirror` |
-| After `git pull` not working | Run `sudo chown -R $(whoami):$(whoami) ~/MagicMirror/modules/MMM-NextcloudPhotos/` |
+| Images not showing | Check Nextcloud folder has photos, check `pm2 logs magicmirror` |
+| After `git pull` not working | `sudo chown -R $(whoami):$(whoami) ~/MagicMirror/modules/MMM-NextcloudPhotos/` |
 
-## Performance Notes
-
-On low-memory devices (Raspberry Pi 3 with ~900MB RAM), the module automatically:
-- Resizes downloaded images to 1920x1080 using `sharp`
-- Compresses to progressive JPEG (quality 80)
-- Limits `sharp` concurrency to 1 thread
-- Cleans up preloaded images from memory after display
-
-A 12MB photo is typically reduced to ~200-300KB, preventing out-of-memory freezes.
-
-## Finding Your Nextcloud Username
+<details>
+<summary><strong>Finding your Nextcloud username</strong></summary>
 
 If you log in via an OIDC provider (e.g., Authentik, Keycloak), your username may differ from your display name (e.g., `oidc-abc123...`).
 
@@ -171,16 +231,23 @@ To find it:
 2. Go to **Settings**
 3. Your username is visible in the URL: `https://cloud.example.com/settings/user/YOUR_USERNAME`
 
-## Supporters
+</details>
 
-<p align="center">
-  <a href="https://infotipp.hu"><img src="docs/images/infotipp-logo.png" height="40" alt="Infotipp Rendszerház Kft." /></a>
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://brutefence.com"><img src="docs/images/brutefence.png" height="40" alt="BruteFence" /></a>
-</p>
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | MagicMirror² Module API (DOM manipulation, crossfade) |
+| Backend | Node.js node_helper (socket notifications) |
+| Auth | OAuth2 (Nextcloud built-in) with auto-refresh |
+| File Access | WebDAV (PROPFIND + GET with Bearer token) |
+| Image Processing | sharp (resize, compress, progressive JPEG) |
+| HTTP Client | axios |
 
 ---
 
 ## License
 
-MIT
+[MIT](LICENSE) — use it, fork it, self-host it. Contributions welcome.
